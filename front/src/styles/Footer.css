@@ -1,0 +1,3 @@
+.link {
+  @apply text-sm font-semibold text-white hover:text-slate-300 transition-colors ease-in-out duration-100;
+}
