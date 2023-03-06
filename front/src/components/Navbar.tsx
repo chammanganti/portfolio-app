@@ -51,7 +51,7 @@ const Navbar: React.FC<{}> = ({}) => {
   return (
     <>
       <nav
-        className={`fixed w-full bg-white py-4 ${
+        className={`fixed w-full bg-white py-4 z-50 ${
           hasScrolled === true ? "border-b" : "border-none"
         }`}
       >
