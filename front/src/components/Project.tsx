@@ -16,7 +16,7 @@ interface ProjectInterface {
 export const ProjectContainer: React.FC<ProjectContainerInterface> = ({
   children,
 }) => {
-  return <ul className="bg-slate-50 p-4">{children}</ul>;
+  return <ul className="bg-slate-50 dark:bg-slate-900/40 p-4">{children}</ul>;
 };
 
 export const Project: React.FC<ProjectInterface> = ({ project }) => {
@@ -34,14 +34,14 @@ export const Project: React.FC<ProjectInterface> = ({ project }) => {
 
   return (
     <li
-      className={`flex flex-col group bg-white ring-1 ring-slate-200 rounded-md shadow-sm p-4 mb-4 last:mb-0 cursor-pointer ${
+      className={`flex flex-col group bg-white dark:bg-slate-700 ring-1 dark:ring-0 ring-slate-200 rounded-md shadow-sm p-4 mb-4 last:mb-0 cursor-pointer ${
         toggle === true ? "is-open" : ""
       }`}
       onClick={() => setToggle(!toggle)}
     >
       <section className="flex justify-between items-center">
         <div>
-          <p className="text-slate-900 font-semibold">{project.name}</p>
+          <p className="text-slate-900 dark:text-slate-100 font-semibold">{project.name}</p>
           <p className="text-slate-400 font-light">{project.description}</p>
         </div>
         <div className="flex items-center space-x-8">
@@ -93,13 +93,13 @@ export const Project: React.FC<ProjectInterface> = ({ project }) => {
           </a>
         </div>
         <div className="mt-6" hidden={countHealth() === 0}>
-          <h3 className="text-slate-900 font-semibold">Health checks</h3>
+          <h3 className="text-slate-900 dark:text-slate-100 font-semibold">Health checks</h3>
           {project.statuses.map((status) => (
             <div key={status.id} className="flex justify-between items-center">
               <p className="text-slate-400 font-light">{status.name}</p>
               <span
                 className={`${
-                  status.is_healthy === true ? "text-green-500" : "text-red-500"
+                  status.is_healthy === true ? "text-green-500 dark:text-green-400" : "text-red-500 dark:text-red-400"
                 }`}
               >
                 <CheckCircle />

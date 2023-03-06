@@ -22,7 +22,7 @@ const NavbarContent: React.FC<NavbarContentInterface> = ({ invisible }) => {
           <Self />
         </a>
         <a href="/">
-          <p className="font-semibold text-slate-900 hidden sm:block">
+          <p className="font-semibold text-slate-900 dark:text-slate-100 hidden sm:block">
             Cham Manganti
           </p>
         </a>
@@ -51,8 +51,8 @@ const Navbar: React.FC<{}> = ({}) => {
   return (
     <>
       <nav
-        className={`fixed w-full bg-white py-4 z-50 ${
-          hasScrolled === true ? "border-b" : "border-none"
+        className={`fixed w-full bg-white dark:bg-slate-900 py-4 z-50 ${
+          hasScrolled === true ? "border-b dark:border-b-slate-800" : "border-none"
         }`}
       >
         <NavbarContent />
