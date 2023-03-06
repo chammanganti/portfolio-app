@@ -95,7 +95,7 @@ export const Project: React.FC<ProjectInterface> = ({ project }) => {
         <div className="mt-6" hidden={countHealth() === 0}>
           <h3 className="text-slate-900 font-semibold">Health checks</h3>
           {project.statuses.map((status) => (
-            <div className="flex justify-between items-center">
+            <div key={status.id} className="flex justify-between items-center">
               <p className="text-slate-400 font-light">{status.name}</p>
               <span
                 className={`${
