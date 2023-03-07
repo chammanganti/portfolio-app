@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Self } from "./logos/Self";
 import SocialMedia from "./SocialMedia";
+import ThemePicker from "./ThemePicker";
 
 interface NavbarContentInterface {
   invisible?: boolean;
@@ -27,7 +28,10 @@ const NavbarContent: React.FC<NavbarContentInterface> = ({ invisible }) => {
           </p>
         </a>
       </div>
-      <SocialMedia />
+      <div className="flex items-center space-x-12">
+        <SocialMedia />
+        <ThemePicker />
+      </div>
     </div>
   );
 };
@@ -52,7 +56,9 @@ const Navbar: React.FC<{}> = ({}) => {
     <>
       <nav
         className={`fixed w-full bg-white dark:bg-slate-900 py-4 z-50 ${
-          hasScrolled === true ? "border-b dark:border-b-slate-800" : "border-none"
+          hasScrolled === true
+            ? "border-b dark:border-b-slate-800"
+            : "border-none"
         }`}
       >
         <NavbarContent />
