@@ -17,33 +17,46 @@ type ThemeContextType = {
   setTheme: Dispatch<SetStateAction<Theme>>;
 };
 
+const THEME_KEY: string = "theme";
+
 export const ThemeContext = createContext({} as ThemeContextType);
 
-const getInitialTheme = (): Theme => {
-  if (
-    localStorage?.theme === "dark" ||
-    (!("theme" in localStorage) &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches)
-  ) {
-    return Theme.Dark;
+const getStoredTheme = (): Theme => {
+  const storedTheme = localStorage.getItem(THEME_KEY) as Theme;
+  if (typeof storedTheme === "string") {
+    return storedTheme;
   }
 
-  return Theme.Light;
+  return Theme.System;
 };
 
 export const ThemeProvider: React.FC<ThemeProviderInterface> = ({
   children,
 }) => {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme());
+  const [theme, setTheme] = useState<Theme>(getStoredTheme());
 
   const handleSetTheme = (theme: Theme) => {
     const root = window.document.documentElement;
-    const isDark = theme === Theme.Dark;
 
-    root.classList.remove(isDark === true ? Theme.Light : Theme.Dark);
-    root.classList.add(theme);
-
-    localStorage.setItem("theme", theme.toString());
+    switch (theme) {
+      case Theme.Dark:
+        root.classList.add(Theme.Dark);
+        localStorage.setItem(THEME_KEY, Theme.Dark);
+        break;
+      case Theme.Light:
+        root.classList.remove(Theme.Dark);
+        localStorage.setItem(THEME_KEY, Theme.Light);
+        break;
+      default:
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark")
+          .matches
+          ? Theme.Dark
+          : Theme.Light;
+        const isDark = systemTheme === Theme.Dark;
+        root.classList.remove(isDark === true ? Theme.Light : Theme.Dark);
+        root.classList.add(systemTheme);
+        localStorage.removeItem(THEME_KEY);
+    }
   };
 
   useEffect(() => {
