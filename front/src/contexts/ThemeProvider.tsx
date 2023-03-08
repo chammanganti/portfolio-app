@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { DARK_SCHEME_QUERY } from "../constants";
 import { Theme } from "../enums/theme";
 
 interface ThemeProviderInterface {
@@ -48,8 +49,7 @@ export const ThemeProvider: React.FC<ThemeProviderInterface> = ({
         localStorage.setItem(THEME_KEY, Theme.Light);
         break;
       default:
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark")
-          .matches
+        const systemTheme = window.matchMedia(DARK_SCHEME_QUERY).matches
           ? Theme.Dark
           : Theme.Light;
         const isDark = systemTheme === Theme.Dark;
@@ -58,6 +58,16 @@ export const ThemeProvider: React.FC<ThemeProviderInterface> = ({
         localStorage.removeItem(THEME_KEY);
     }
   };
+
+  useEffect(() => {
+    window.matchMedia(DARK_SCHEME_QUERY).addEventListener("change", (_) => {
+      handleSetTheme(Theme.System);
+    });
+    return () =>
+      window
+        .matchMedia(DARK_SCHEME_QUERY)
+        .removeEventListener("change", (_) => {});
+  }, []);
 
   useEffect(() => {
     handleSetTheme(theme);
