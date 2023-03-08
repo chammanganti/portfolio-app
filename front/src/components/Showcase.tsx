@@ -73,7 +73,7 @@ const Showcase: React.FC<{}> = ({}) => {
         <header className="md:flex md:items-center md:justify-between p-4">
           <h2 className="mb-4 md:mb-0 font-semibold text-slate-900 dark:text-slate-100">Projects</h2>
           <div className="flex items-center space-x-2">
-            <input className="w-full bg-white dark:bg-slate-700 p-2 ring-1 dark:ring-0 ring-slate-200 focus:ring-2 focus:ring-primary focus:outline-none dark:focus-within:bg-transparent shadow-sm rounded-md text-sm font-light text-slate-900 dark:text-slate-100" type="text" placeholder="Token" />
+            <input className="w-full bg-white dark:bg-slate-700 p-2 ring-1 dark:ring-0 ring-slate-200 focus:ring-2 dark:focus:ring-2 focus:ring-primary dark:focus:ring-primary focus:outline-none dark:focus-within:bg-transparent shadow-sm rounded-md text-sm font-light text-slate-900 dark:text-slate-100" type="text" placeholder="Token" />
             <button className="bg-primary hover:bg-primary-400 p-2 rounded-md text-sm font-semibold text-white transition-colors ease-in-out duration-100">Unlock</button>
           </div>
         </header>
