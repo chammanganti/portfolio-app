@@ -2,6 +2,7 @@ package constant
 
 // Env
 const ADDR string = "ADDR"
+const ALLOW_WORKER string = "ALLOW_WORKER"
 const DB_HOST string = "DB_HOST"
 const DB_PORT string = "DB_PORT"
 const DB_USERNAME string = "DB_USERNAME"

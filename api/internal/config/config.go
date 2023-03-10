@@ -8,6 +8,7 @@ import (
 // Config
 type Config struct {
 	ADDR          string
+	ALLOW_WORKER  string
 	DB_HOST       string
 	DB_PORT       string
 	DB_USERNAME   string
@@ -23,6 +24,7 @@ type Config struct {
 func GetConfig() *Config {
 	return &Config{
 		ADDR:          getEnv(constant.ADDR, ":8000"),
+		ALLOW_WORKER:  getEnv(constant.ALLOW_WORKER, "false"),
 		DB_HOST:       getEnv(constant.DB_HOST, "127.0.0.1"),
 		DB_PORT:       getEnv(constant.DB_PORT, "5432"),
 		DB_USERNAME:   getEnv(constant.DB_USERNAME, "postgres"),
