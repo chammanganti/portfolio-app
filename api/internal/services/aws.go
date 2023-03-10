@@ -3,6 +3,7 @@ package service
 import (
 	model "api/internal/models"
 	"context"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -42,13 +43,10 @@ func (a AWSService) GetEC2Status(client *ec2.Client, context context.Context, pa
 	return instances, nil
 }
 
-func collectEC2Tags(tags []types.Tag) []model.EC2Tag {
-	var ec2Tags []model.EC2Tag
+func collectEC2Tags(tags []types.Tag) map[string]string {
+	ec2Tags := make(map[string]string)
 	for _, tag := range tags {
-		ec2Tags = append(ec2Tags, model.EC2Tag{
-			Name:  *tag.Key,
-			Value: *tag.Value,
-		})
+		ec2Tags[strings.ToLower(*tag.Key)] = *tag.Value
 	}
 	return ec2Tags
 }
