@@ -39,6 +39,9 @@ func (a AWSService) GetEC2Status(client *ec2.Client, context context.Context, pa
 			})
 		}
 	}
+	if len(instances) == 0 {
+		instances = []model.EC2{}
+	}
 
 	return instances, nil
 }
