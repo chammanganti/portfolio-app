@@ -22,7 +22,8 @@ type AWSHandler struct {
 }
 
 // New AWS handler
-func NewAWSHandler(config aws.Config, service service.AWSServiceInterface) AWSHandlerInterface {
+func NewAWSHandler(config aws.Config) AWSHandlerInterface {
+	service := service.NewAWSService()
 	return &AWSHandler{
 		Config:  config,
 		Service: service,

@@ -5,6 +5,7 @@ import (
 	middleware "api/internal/router/middlewares"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -12,13 +13,17 @@ import (
 const v1Prefix = "/api/v1"
 
 // Sets up the routes
-func SetupRoutes(f *fiber.App, db *gorm.DB) {
+func SetupRoutes(f *fiber.App, config aws.Config, db *gorm.DB) {
 	authMiddleware := middleware.NewAuth(middleware.AuthConfig{})
 
+	awsHandler := handler.NewAWSHandler(config)
 	projectHandler := handler.NewProjectHandler(db)
 	projectStatusHandler := handler.NewProjectStatusHandler(db)
 
 	v1 := f.Group(v1Prefix)
+
+	aws := v1.Group("aws")
+	aws.Get("/ec2-statuses", awsHandler.GetEC2Status)
 
 	projects := v1.Group("projects")
 	projects.Get("/", projectHandler.All)

@@ -2,9 +2,7 @@ package main
 
 import (
 	"api/internal/config"
-	handler "api/internal/handlers"
 	"api/internal/router"
-	service "api/internal/services"
 	store "api/internal/store/database"
 	"context"
 
@@ -26,16 +24,13 @@ func (a App) Run() error {
 		return err
 	}
 
-	router.SetupRoutes(fiber, db)
-
 	awsConfig, err := awsConfig.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatal("failed loading the aws config")
+		return err
 	}
-	aws := fiber.Group("aws")
-	awsService := service.NewAWSService()
-	awsHandler := handler.NewAWSHandler(awsConfig, awsService)
-	aws.Get("", awsHandler.GetEC2Status)
+
+	router.SetupRoutes(fiber, awsConfig, db)
 
 	if err := fiber.Listen(config.ADDR); err != nil {
 		log.Fatal("failed setting up the server")
