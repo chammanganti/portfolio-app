@@ -2,7 +2,8 @@ package main
 
 import (
 	"api/internal/config"
-	store "api/internal/store/database"
+	db "api/internal/store/database"
+	redis "api/internal/store/redis"
 	"api/internal/worker"
 	"context"
 	"strconv"
@@ -21,23 +22,34 @@ func (w Worker) Run() error {
 		return nil
 	}
 
-	db, err := store.NewDatabase()
+	db, err := db.NewDatabase()
 	if err != nil {
 		log.Fatal("failed setting up the database")
 		return err
 	}
+
+	rdb := redis.NewRedis(context.Background(), config.REDIS_ADDR, config.REDIS_PASSWORD, config.REDIS_DB)
 
 	awsConfig, err := awsConfig.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatal("failed loading the aws config")
 	}
 
-	worker := worker.NewWorker(awsConfig, db)
+	worker := worker.NewWorker(awsConfig, db, rdb)
 
 	log.Info("worker is running")
+
+	cacheChanSize := 2
+	cacheChan := make(chan string, cacheChanSize)
 	for range time.Tick(time.Second * 5) {
-		// TODO: cache the projects with a TTL of 30s
-		// TODO: cache the project statuses with a TTL of 30s
+		cacheChan <- worker.CacheProjects()
+		cacheChan <- worker.CacheProjectStatuses()
+
+		for range make([]int, cacheChanSize) {
+			if v := <-cacheChan; v != "" {
+				log.Info(v)
+			}
+		}
 
 		worker.UpdateEC2Statuses()
 	}
