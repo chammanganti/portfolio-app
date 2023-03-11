@@ -12,6 +12,9 @@ const DB_SSL_MODE string = "DB_SSL_MODE"
 const DB_TIMEZONE string = "DB_TIMEZONE"
 const JWT_AT_SECRET string = "JWT_AT_SECRET"
 const JWT_SS string = "JWT_SS"
+const REDIS_ADDR string = "REDIS_ADDR"
+const REDIS_DB string = "REDIS_DB"
+const REDIS_PASSWORD string = "REDIS_PASSWORD"
 
 // JWT errors
 const EXPIRED_TOKEN string = "token is expired"
