@@ -33,3 +33,8 @@ const TEST_DELETED string = "deleted"
 const TEST_FOUND string = "found"
 const TEST_NOT_FOUND string = "not found"
 const TEST_UPDATED string = "updated"
+
+// Redis
+const PROJECTS_KEY string = "projects"
+const PROJECT_STATUSES_KEY string = "project_statuses"
+const PROJECT_STATUS_KEY_PREFIX string = "project_status"

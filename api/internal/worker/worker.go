@@ -1,12 +1,15 @@
 package worker
 
 import (
+	"api/internal/libs/constant"
+	model "api/internal/models"
 	repository "api/internal/repositories"
 	service "api/internal/services"
 	store "api/internal/store/redis"
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -66,7 +69,7 @@ func (w Worker) CacheProjects() string {
 		log.Fatal(err)
 		return err.Error()
 	}
-	w.Redis.Set("projects", string(p), time.Second*28)
+	w.Redis.Set(constant.PROJECTS_KEY, string(p), time.Second*28)
 
 	return "projects have been cached"
 }
@@ -88,7 +91,7 @@ func (w Worker) CacheProjectStatuses() string {
 		log.Fatal(err)
 		return err.Error()
 	}
-	w.Redis.Set("project_statuses", string(p), time.Second*28)
+	w.Redis.Set(constant.PROJECT_STATUSES_KEY, string(p), time.Second*28)
 
 	return "project statuses have been cached"
 }
@@ -116,7 +119,62 @@ func (w Worker) UpdateEC2Statuses() {
 	instances, err := w.AWSService.GetEC2Status(client, context.TODO(), params)
 	if err != nil {
 		log.Warn(err)
+		return
+	}
+
+	projectsStr, _ := w.Redis.Get(constant.PROJECTS_KEY)
+	projectStatusesStr, _ := w.Redis.Get(constant.PROJECT_STATUSES_KEY)
+
+	var projects []model.Project
+	if err := json.Unmarshal([]byte(projectsStr), &projects); err != nil {
+		log.Warn(err)
+		return
+	}
+
+	var projectStatuses []model.ProjectStatus
+	if err := json.Unmarshal([]byte(projectStatusesStr), &projectStatuses); err != nil {
+		log.Warn(err)
+		return
+	}
+
+	for _, instance := range instances {
+		project := getProject(instance.Tags["name"], projects)
+		projectStatus := getProjectStatus(instance.Tags["sid"], project.ID, projectStatuses)
+		isHealthy := types.InstanceStateNameRunning == instance.State
+		projectStatus.IsHealthy = isHealthy
+
+		cachedHealthKey := fmt.Sprintf("%s:%d:%s", constant.PROJECT_STATUS_KEY_PREFIX, projectStatus.ID, projectStatus.Name)
+
+		cachedHealth, _ := w.Redis.Get(cachedHealthKey)
+		if cachedHealth == strconv.FormatBool(isHealthy) {
+			continue
+		}
+		updatedProjectStatus, err := w.ProjectStatusService.Update(projectStatus.ID, projectStatus)
+		if err != nil {
+			log.Warn(err)
+		}
+		w.Redis.Set(cachedHealthKey, strconv.FormatBool(isHealthy), time.Hour)
+
+		log.Info(updatedProjectStatus)
 	}
 
 	fmt.Println(instances)
+}
+
+func getProject(name string, projects []model.Project) model.Project {
+	for _, project := range projects {
+		if name == project.Name {
+			return project
+		}
+	}
+	return model.Project{}
+}
+
+func getProjectStatus(name string, projectID uint, projectStatuses []model.ProjectStatus) model.ProjectStatus {
+	for _, projectStatus := range projectStatuses {
+		if name == projectStatus.Name && projectID == projectStatus.ProjectID {
+			return projectStatus
+		}
+	}
+	return model.ProjectStatus{}
 }
