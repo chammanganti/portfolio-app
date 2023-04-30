@@ -1,6 +1,10 @@
 package worker
 
 import (
+	"bytes"
+	"io/ioutil"
+	"net/http"
+	"worker/internal/config"
 	"worker/internal/libs/constant"
 	model "worker/internal/models"
 	"worker/internal/proto/project"
@@ -30,7 +34,8 @@ type WorkerInterface interface {
 
 // Worker
 type Worker struct {
-	Config               aws.Config
+	Config               *config.Config
+	AWSConfig            aws.Config
 	GRPC                 *grpc.ClientConn
 	Redis                store.RedisInterface
 	ProjectService       project.ProjectClient
@@ -39,12 +44,13 @@ type Worker struct {
 }
 
 // New worker
-func NewWorker(config aws.Config, grpc *grpc.ClientConn, rdb store.RedisInterface) WorkerInterface {
+func NewWorker(config *config.Config, awsConfig aws.Config, grpc *grpc.ClientConn, rdb store.RedisInterface) WorkerInterface {
 	projectService := project.NewProjectClient(grpc)
 	projectStatusService := project_status.NewProjectStatusClient(grpc)
 	awsService := service.NewAWSService()
 	return &Worker{
 		Config:               config,
+		AWSConfig:            awsConfig,
 		GRPC:                 grpc,
 		Redis:                rdb,
 		ProjectService:       projectService,
@@ -100,7 +106,7 @@ func (w Worker) CacheProjectStatuses() string {
 
 // Updates the ec2 statuses of the projects
 func (w Worker) UpdateEC2Statuses() {
-	client := ec2.NewFromConfig(w.Config)
+	client := ec2.NewFromConfig(w.AWSConfig)
 	params := &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
 			{
@@ -143,6 +149,7 @@ func (w Worker) UpdateEC2Statuses() {
 		project := getProject(instance.Tags["name"], projects.Projects)
 		projectStatus := getProjectStatus(instance.Tags["sid"], project.ProjectId, projectStatuses.ProjectStatuses)
 		isHealthy := types.InstanceStateNameRunning == instance.State
+		projectStatus.IsHealthy = isHealthy
 
 		cachedHealthKey := fmt.Sprintf("%s:%s:%s", constant.PROJECT_STATUS_KEY_PREFIX, projectStatus.ProjectStatusId, projectStatus.Name)
 
@@ -160,6 +167,12 @@ func (w Worker) UpdateEC2Statuses() {
 		if err != nil {
 			log.Warn(err)
 		}
+
+		_, err = sendProjectStatus(w, projectStatus)
+		if err != nil {
+			log.Warn(err)
+		}
+
 		w.Redis.Set(cachedHealthKey, strconv.FormatBool(isHealthy), time.Hour)
 
 		log.Info(updatedProjectStatus)
@@ -184,4 +197,24 @@ func getProjectStatus(name string, projectId string, projectStatuses []model.Pro
 		}
 	}
 	return model.ProjectStatus{}
+}
+
+func sendProjectStatus(w Worker, projectStatus model.ProjectStatus) (string, error) {
+	body, err := json.Marshal(projectStatus)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := http.Post(fmt.Sprintf("%s/project_events", w.Config.API_URL), "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	body, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
 }

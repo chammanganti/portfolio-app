@@ -10,6 +10,7 @@ import (
 // Config
 type Config struct {
 	ALLOW_WORKER   string
+	API_URL        string
 	GRPC_SERVER    string
 	REDIS_ADDR     string
 	REDIS_DB       int
@@ -26,6 +27,7 @@ func GetConfig() *Config {
 
 	return &Config{
 		ALLOW_WORKER:   getEnv(constant.ALLOW_WORKER, "false"),
+		API_URL:        getEnv(constant.API_URL, "http://127.0.0.1:8000"),
 		GRPC_SERVER:    getEnv(constant.GRPC_SERVER, "localhost:9000"),
 		REDIS_ADDR:     getEnv(constant.REDIS_ADDR, "127.0.0.1:6379"),
 		REDIS_DB:       rDB,

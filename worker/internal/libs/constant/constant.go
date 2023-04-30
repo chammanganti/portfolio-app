@@ -2,6 +2,7 @@ package constant
 
 // Env
 const ALLOW_WORKER string = "ALLOW_WORKER"
+const API_URL string = "API_URL"
 const GRPC_SERVER string = "GRPC_SERVER"
 const REDIS_ADDR string = "REDIS_ADDR"
 const REDIS_DB string = "REDIS_DB"

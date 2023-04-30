@@ -36,7 +36,7 @@ func (w Worker) Run() error {
 		log.Fatal("failed loading the aws config")
 	}
 
-	worker := worker.NewWorker(awsConfig, grpc, rdb)
+	worker := worker.NewWorker(config, awsConfig, grpc, rdb)
 
 	log.Info("worker is running")
 
