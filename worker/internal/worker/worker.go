@@ -3,7 +3,8 @@ package worker
 import (
 	"worker/internal/libs/constant"
 	model "worker/internal/models"
-	repository "worker/internal/repositories"
+	"worker/internal/proto/project"
+	"worker/internal/proto/project_status"
 	service "worker/internal/services"
 	store "worker/internal/store/redis"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	"google.golang.org/grpc"
 )
 
 // Worker interface
@@ -29,27 +30,26 @@ type WorkerInterface interface {
 
 // Worker
 type Worker struct {
-	Config                  aws.Config
-	Redis                   store.RedisInterface
-	ProjectRepository       repository.ProjectRepositoryInterface
-	ProjectStatusRepository repository.ProjectStatusRepositoryInterface
-	AWSService              service.AWSServiceInterface
-	ProjectStatusService    service.ProjectStatusServiceInterface
+	Config               aws.Config
+	GRPC                 *grpc.ClientConn
+	Redis                store.RedisInterface
+	ProjectService       project.ProjectClient
+	ProjectStatusService project_status.ProjectStatusClient
+	AWSService           service.AWSServiceInterface
 }
 
 // New worker
-func NewWorker(config aws.Config, db *gorm.DB, rdb store.RedisInterface) WorkerInterface {
-	projectRepository := repository.NewProjectRepository(db)
-	projectStatusRepository := repository.NewProjectStatusRepository(db)
-	projectStatusService := service.NewProjectStatusService(projectStatusRepository)
+func NewWorker(config aws.Config, grpc *grpc.ClientConn, rdb store.RedisInterface) WorkerInterface {
+	projectService := project.NewProjectClient(grpc)
+	projectStatusService := project_status.NewProjectStatusClient(grpc)
 	awsService := service.NewAWSService()
 	return &Worker{
-		Config:                  config,
-		Redis:                   rdb,
-		ProjectRepository:       projectRepository,
-		ProjectStatusRepository: projectStatusRepository,
-		AWSService:              awsService,
-		ProjectStatusService:    projectStatusService,
+		Config:               config,
+		GRPC:                 grpc,
+		Redis:                rdb,
+		ProjectService:       projectService,
+		ProjectStatusService: projectStatusService,
+		AWSService:           awsService,
 	}
 }
 
@@ -59,13 +59,14 @@ func (w Worker) CacheProjects() string {
 		return ""
 	}
 
-	projects, err := w.ProjectRepository.FindAll()
+	projects, err := w.ProjectService.Find(context.Background(), &project.FindRequest{})
 	if err != nil {
 		log.Fatal(err)
 		return err.Error()
 	}
 
 	p, err := json.Marshal(projects)
+	fmt.Println(string(p))
 	if err != nil {
 		log.Fatal(err)
 		return err.Error()
@@ -81,7 +82,7 @@ func (w Worker) CacheProjectStatuses() string {
 		return ""
 	}
 
-	projectStatuses, err := w.ProjectStatusRepository.FindAll()
+	projectStatuses, err := w.ProjectStatusService.Find(context.Background(), &project_status.FindRequest{})
 	if err != nil {
 		log.Fatal(err)
 		return err.Error()
@@ -126,23 +127,22 @@ func (w Worker) UpdateEC2Statuses() {
 	projectsStr, _ := w.Redis.Get(constant.PROJECTS_KEY)
 	projectStatusesStr, _ := w.Redis.Get(constant.PROJECT_STATUSES_KEY)
 
-	var projects []model.Project
+	var projects model.Projects
 	if err := json.Unmarshal([]byte(projectsStr), &projects); err != nil {
 		log.Warn(err)
 		return
 	}
 
-	var projectStatuses []model.ProjectStatus
+	var projectStatuses model.ProjectStatuses
 	if err := json.Unmarshal([]byte(projectStatusesStr), &projectStatuses); err != nil {
 		log.Warn(err)
 		return
 	}
 
 	for _, instance := range instances {
-		project := getProject(instance.Tags["name"], projects)
-		projectStatus := getProjectStatus(instance.Tags["sid"], project.ProjectId, projectStatuses)
+		project := getProject(instance.Tags["name"], projects.Projects)
+		projectStatus := getProjectStatus(instance.Tags["sid"], project.ProjectId, projectStatuses.ProjectStatuses)
 		isHealthy := types.InstanceStateNameRunning == instance.State
-		projectStatus.IsHealthy = isHealthy
 
 		cachedHealthKey := fmt.Sprintf("%s:%s:%s", constant.PROJECT_STATUS_KEY_PREFIX, projectStatus.ProjectStatusId, projectStatus.Name)
 
@@ -150,7 +150,13 @@ func (w Worker) UpdateEC2Statuses() {
 		if cachedHealth == strconv.FormatBool(isHealthy) {
 			continue
 		}
-		updatedProjectStatus, err := w.ProjectStatusService.Update(projectStatus.ProjectStatusId, projectStatus)
+		updateRequest := &project_status.UpdateRequest{
+			ProjectStatusId: projectStatus.ProjectStatusId,
+			Name:            projectStatus.Name,
+			IsHealthy:       isHealthy,
+			ProjectId:       projectStatus.ProjectId,
+		}
+		updatedProjectStatus, err := w.ProjectStatusService.Update(context.Background(), updateRequest)
 		if err != nil {
 			log.Warn(err)
 		}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"worker/internal/config"
-	db "worker/internal/store/database"
+	"worker/internal/grpc"
 	redis "worker/internal/store/redis"
 	"worker/internal/worker"
 
@@ -23,11 +23,11 @@ func (w Worker) Run() error {
 		return nil
 	}
 
-	db, err := db.NewDatabase()
+	grpc, err := grpc.NewGRPC()
 	if err != nil {
-		log.Fatal("failed setting up the database")
-		return err
+		log.Fatal("failed setting up the grpc connection")
 	}
+	defer grpc.Close()
 
 	rdb := redis.NewRedis(context.Background(), config.REDIS_ADDR, config.REDIS_PASSWORD, config.REDIS_DB)
 
@@ -36,7 +36,7 @@ func (w Worker) Run() error {
 		log.Fatal("failed loading the aws config")
 	}
 
-	worker := worker.NewWorker(awsConfig, db, rdb)
+	worker := worker.NewWorker(awsConfig, grpc, rdb)
 
 	log.Info("worker is running")
 
